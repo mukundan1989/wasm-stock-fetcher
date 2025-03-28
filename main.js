@@ -24,33 +24,28 @@ const initDB = new Promise((resolve, reject) => {
     };
 });
 
-// Fetch stock data from Yahoo Finance
+// Fetch stock data from Yahoo Finance (using a CORS proxy)
 async function fetchStockData(ticker, days) {
     try {
-        // Call the Go function to get the parameters
-        const params = goFetchStockData(ticker, days);
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setDate(endDate.getDate() - days);
         
-        // Convert to JavaScript object
-        const { startDate, endDate } = params;
-        
-        // Use a CORS proxy to avoid issues
         const proxyUrl = "https://cors-anywhere.herokuapp.com/";
-        const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/download/${ticker}?period1=${Math.floor(new Date(startDate).getTime() / 1000)}&period2=${Math.floor(new Date(endDate).getTime() / 1000)}&interval=1d&events=history`;
+        const yahooUrl = `https://query1.finance.yahoo.com/v7/finance/download/${ticker}?period1=${Math.floor(startDate.getTime() / 1000)}&period2=${Math.floor(endDate.getTime() / 1000)}&interval=1d&events=history`;
         
         const response = await fetch(proxyUrl + yahooUrl);
-        if (!response.ok) throw new Error("Network response was not ok");
+        if (!response.ok) throw new Error("Failed to fetch data");
         
         const csvData = await response.text();
         const rows = csvData.split("\n").slice(1); // Remove header
         
-        const stockData = rows.map(row => {
-            const [date, open, high, low, close, adjClose, volume] = row.split(",");
+        return rows.map(row => {
+            const [date, open, high, low, close] = row.split(",");
             return { date, open, close, ticker };
         }).filter(Boolean);
-        
-        return stockData;
     } catch (error) {
-        console.error("Error fetching stock data:", error);
+        console.error("Error fetching data:", error);
         return null;
     }
 }
@@ -62,7 +57,7 @@ async function storeStockData(data) {
         const tx = db.transaction(storeName, "readwrite");
         const store = tx.objectStore(storeName);
         
-        // Clear existing data for this ticker
+        // Clear old data for this ticker
         const clearRequest = store.openCursor();
         clearRequest.onsuccess = (event) => {
             const cursor = event.target.result;
@@ -75,14 +70,12 @@ async function storeStockData(data) {
         };
         
         // Add new data
-        data.forEach(item => {
-            store.put(item);
-        });
+        data.forEach(item => store.put(item));
         
         return new Promise((resolve) => {
             tx.oncomplete = () => resolve(true);
             tx.onerror = (event) => {
-                console.error("Transaction error:", event.target.error);
+                console.error("DB error:", event.target.error);
                 resolve(false);
             };
         });
@@ -98,18 +91,17 @@ async function displayStoredData(ticker) {
         const db = await initDB;
         const tx = db.transaction(storeName, "readonly");
         const store = tx.objectStore(storeName);
-        const index = store.index("ticker");
-        const request = index.getAll(ticker);
+        const request = store.getAll();
         
         return new Promise((resolve) => {
             request.onsuccess = (event) => {
-                const data = event.target.result;
-                displayData(data);
-                resolve(data);
+                const allData = event.target.result;
+                const filteredData = allData.filter(item => item.ticker === ticker);
+                displayData(filteredData);
+                resolve(filteredData);
             };
-            
             request.onerror = (event) => {
-                console.error("Error fetching data:", event.target.error);
+                console.error("Error reading DB:", event.target.error);
                 resolve(null);
             };
         });
@@ -119,7 +111,7 @@ async function displayStoredData(ticker) {
     }
 }
 
-// Display data in the UI
+// Render data in HTML
 function displayData(data) {
     const container = document.getElementById("stockData");
     
@@ -128,31 +120,17 @@ function displayData(data) {
         return;
     }
     
-    const ticker = data[0].ticker;
-    let html = `<h2>${ticker} Stock Data</h2>`;
-    html += `<table>
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Open</th>
-                <th>Close</th>
-            </tr>
-        </thead>
-        <tbody>`;
+    let html = `<h2>${data[0].ticker} Stock Data</h2><table><thead><tr><th>Date</th><th>Open</th><th>Close</th></tr></thead><tbody>`;
     
     data.forEach(item => {
-        html += `<tr>
-            <td>${item.date}</td>
-            <td>${item.open}</td>
-            <td>${item.close}</td>
-        </tr>`;
+        html += `<tr><td>${item.date}</td><td>${item.open}</td><td>${item.close}</td></tr>`;
     });
     
     html += `</tbody></table>`;
     container.innerHTML = html;
 }
 
-// Event listeners
+// Button event listeners
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("fetchBtn").addEventListener("click", async () => {
         const ticker = document.getElementById("ticker").value.toUpperCase();
@@ -161,9 +139,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const data = await fetchStockData(ticker, days);
         if (data) {
             const stored = await storeStockData(data);
-            if (stored) {
-                displayData(data);
-            }
+            if (stored) displayData(data);
         }
     });
     
