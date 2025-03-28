@@ -1,7 +1,11 @@
 import streamlit as st
 from pathlib import Path
 
-st.set_page_config(page_title="Stock Fetcher", layout="wide")
+st.set_page_config(
+    page_title="Stock Fetcher",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
 def main():
     st.title("📊 Stock Price Fetcher")
@@ -10,13 +14,12 @@ def main():
     with open("index.html", "r") as f:
         html_content = f.read()
     
-    # With this (explicitly allow unsafe HTML):
+    # Corrected component call (remove 'sanitize' parameter)
     st.components.v1.html(
         html_content,
         height=800,
         scrolling=True,
-        width=None,
-        sanitize=False,  # Allows IndexedDB to work
+        width=None
     )
 
 if __name__ == "__main__":
