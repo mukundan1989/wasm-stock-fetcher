@@ -1,32 +1,16 @@
 import streamlit as st
-from pyodide.http import pyfetch
-import asyncio
-import json
+from pathlib import Path
 
-# Set page title
-st.set_page_config(page_title="Wasm Stock Fetcher")
+st.set_page_config(page_title="Stock Fetcher", layout="wide")
 
-# Title for the app
-st.title("Wasm Stock Price Fetcher")
-
-# Function to display the HTML app
-def display_wasm_app():
-    # Read the HTML file
+def main():
+    st.title("📊 Stock Price Fetcher")
+    
+    # Display the HTML/JS app
     with open("index.html", "r") as f:
         html_content = f.read()
     
-    # Display in Streamlit
-    st.components.v1.html(html_content, width=800, height=600, scrolling=True)
-
-# Main app
-def main():
-    st.sidebar.header("About")
-    st.sidebar.info(
-        "This app uses WebAssembly to fetch stock prices from Yahoo Finance "
-        "and stores them in IndexedDB in your browser."
-    )
-    
-    display_wasm_app()
+    st.components.v1.html(html_content, height=800, scrolling=True)
 
 if __name__ == "__main__":
     main()
