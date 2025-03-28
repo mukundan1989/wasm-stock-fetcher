@@ -10,7 +10,14 @@ def main():
     with open("index.html", "r") as f:
         html_content = f.read()
     
-    st.components.v1.html(html_content, height=800, scrolling=True)
+    # With this (explicitly allow unsafe HTML):
+    st.components.v1.html(
+        html_content,
+        height=800,
+        scrolling=True,
+        width=None,
+        sanitize=False,  # Allows IndexedDB to work
+    )
 
 if __name__ == "__main__":
     main()
