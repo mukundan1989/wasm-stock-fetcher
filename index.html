@@ -1,37 +1,18 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Wasm Stock Fetcher</title>
+    <title>Stock Fetcher</title>
     <meta charset="utf-8">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        #stockData {
-            margin-top: 20px;
-            border: 1px solid #ddd;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        #stockData { margin-top: 20px; border: 1px solid #ddd; padding: 10px; border-radius: 5px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
-    <h1>Stock Price Fetcher</h1>
+    <h1>Stock Price Fetcher (JavaScript)</h1>
     
     <div>
         <label for="ticker">Stock Ticker:</label>
@@ -46,21 +27,7 @@
     
     <div id="stockData"></div>
     
+    <!-- Load JavaScript directly (no WASM needed) -->
     <script src="main.js"></script>
-    <script>
-        // Load the Wasm module
-        async function init() {
-            const go = new Go();
-            const result = await WebAssembly.instantiateStreaming(
-                fetch("wasm/stock_fetcher.wasm"), 
-                go.importObject
-            );
-            go.run(result.instance);
-        }
-        
-        init().catch(err => {
-            console.error("Error loading Wasm:", err);
-        });
-    </script>
 </body>
 </html>
